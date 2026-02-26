@@ -1,6 +1,6 @@
-FROM alpine:latest
+FROM alpine:3.23
 
-RUN apk add nginx curl
+RUN apk --no-cache add nginx=1.28.2-r1 curl=8.17.0-r1
 
 WORKDIR /app
 COPY index.html .

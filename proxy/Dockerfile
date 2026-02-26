@@ -1,6 +1,6 @@
-FROM alpine:latest
+FROM alpine:3.23
 
-RUN apk add nginx
+RUN apk --no-cache add nginx=1.28.2-r1
 
 COPY nginx.conf /etc/nginx/nginx.conf
 
