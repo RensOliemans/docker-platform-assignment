@@ -32,11 +32,6 @@ jobs:
         with:
           dockerfile: "**/Dockerfile"
 
-  validate:
-    name: Validate config files
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
       - name: Validate docker-compose config
         run: |
           cd ${{ github.workspace }}
@@ -51,15 +46,19 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Build all images using compose
-        run: docker compose --env-file .env build
+        run: docker compose build
 
       - name: Package
         run: |
-          docker save assignment-app assignment-api assignment-proxy \
+          docker save $(docker compose config --images) \
             | gzip > images.tar.gz
 
-      - name: Upload image artifacts
-        run: ls
+      - name: Save image artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-images
+          path: images.tar.gz
+          retention-days: 1
 
   test:
     name: Test Platform
@@ -69,4 +68,30 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Download image artifacts
-        run: ls
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-images
+
+      - name: Load images
+        run: docker load < images.tar.gz
+
+      - name: Start services
+        run: |
+          cp .env.example .env
+          docker compose --env-file .env up -d
+
+      - name: Wait for proxy to be healthy
+        run: |
+          sleep 30
+          echo $PROXY_HTTP_PORT
+
+      - name: Test whether proxy is up
+        run: curl -sf http://localhost:8001
+
+      - name: Test API health
+        run: curl -sf http://localhost:8001/api/health
+
+      - name: Tear down
+        if: always()
+        run: docker compose down
+
