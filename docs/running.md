@@ -11,6 +11,55 @@ whether you use `podman` or `docker`.
 podman-compose up --build
 ```
 
+### Scaling up
+Optionally you can scale up the amount of webservers that listen for
+requests by doing:
+
+```sh
+podman-compose up --build --scale app=4
+```
+
+In this case compose will create 4 `app` containers: verify using
+`podman container ls`. Verify that docker automatically fixes the
+network:
+
+```sh
+$ podman exec assignment_proxy_1 apk add bind_tools  # install dig
+$ podman exec assignment_proxy_1 dig app
+; <<>> DiG 9.20.19 <<>> app
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 25134
+;; flags: qr rd ra ad; QUERY: 1, ANSWER: 4, AUTHORITY: 0, ADDITIONAL: 1
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 1232
+; COOKIE: 9fa9f91a2efa886c (echoed)
+;; QUESTION SECTION:
+;app.                           IN      A
+
+;; ANSWER SECTION:
+app.                    0       IN      A       10.89.1.2
+app.                    0       IN      A       10.89.1.3
+app.                    0       IN      A       10.89.1.5
+app.                    0       IN      A       10.89.1.6
+```
+
+The proxy will correctly distribute requests to the various
+containers. You can verify this by doing
+
+```bash
+podman exec assignment_app_1 tail -f /var/log/nginx/access.log
+# the same for each app instance
+
+for i in $(seq 1 10); do
+	curl localhost:8001
+done
+```
+
+And see that the requests are distributed accross the various app
+instances (using nginx's default round-robin balancing method).
+
 ## Manually
 
 The platform consists of two parts: the webserver and the proxy. I use
