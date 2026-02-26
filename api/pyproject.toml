@@ -1,0 +1,8 @@
+[project]
+name = "basic-api"
+version = "1.0"
+description = "Mijn basic api"
+requires-python = ">=3.12"
+dependencies = [
+    "flask>=3.1.2",
+]
