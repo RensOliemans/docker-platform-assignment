@@ -4,9 +4,13 @@ services:
   app:
     build: ./app
 
+  api:
+    build: ./api
+
   proxy:
     build: ./proxy
     ports:
       - "8001:80"
     depends_on:
       - app
+      - api
