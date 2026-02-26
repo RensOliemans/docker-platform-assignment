@@ -1,0 +1,10 @@
+name: assignment
+
+services:
+  app:
+    build: ./app
+
+  proxy:
+    build: ./proxy
+    ports:
+      - "8001:80"
