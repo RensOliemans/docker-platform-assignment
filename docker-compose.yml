@@ -2,18 +2,21 @@ name: assignment
 
 services:
   app:
+    image: ghcr.io/rensoliemans/docker-platform-assignment/app:${IMAGE_TAG:-latest}
     build: ./app
 
   api:
+    image: ghcr.io/rensoliemans/docker-platform-assignment/api:${IMAGE_TAG:-latest}
     build: ./api
     environment:
-      - FLASK_DEBUG=${FLASK_DEBUG}
+      - FLASK_DEBUG=${FLASK_DEBUG:-0}
 
   proxy:
+    image: ghcr.io/rensoliemans/docker-platform-assignment/proxy:${IMAGE_TAG:-latest}
     build: ./proxy
     ports:
-      - "${PROXY_HTTP_PORT}:80"
-      - "${PROXY_HTTPS_PORT}:443"
+      - "${PROXY_HTTP_PORT:-8001}:80"
+      - "${PROXY_HTTPS_PORT:-8443}:443"
     depends_on:
       - app
       - api
