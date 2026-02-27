@@ -4,16 +4,19 @@ services:
   app:
     image: ghcr.io/rensoliemans/docker-platform-assignment/app:${IMAGE_TAG:-latest}
     build: ./app
+    restart: on-failure
 
   api:
     image: ghcr.io/rensoliemans/docker-platform-assignment/api:${IMAGE_TAG:-latest}
     build: ./api
+    restart: on-failure
     environment:
       - FLASK_DEBUG=${FLASK_DEBUG:-0}
 
   proxy:
     image: ghcr.io/rensoliemans/docker-platform-assignment/proxy:${IMAGE_TAG:-latest}
     build: ./proxy
+    restart: on-failure
     ports:
       - "${PROXY_HTTP_PORT:-8001}:80"
       - "${PROXY_HTTPS_PORT:-8443}:443"
