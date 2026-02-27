@@ -3,7 +3,7 @@ FROM alpine:3.23
 RUN apk --no-cache add python3=3.12.12-r0 uv=0.10.2-r0 curl=8.17.0-r1
 
 WORKDIR /api
-COPY api.py pyproject.toml uv.lock /api/
+COPY api.py primes.py pyproject.toml uv.lock /api/
 
 RUN uv sync
 
