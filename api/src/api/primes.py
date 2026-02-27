@@ -1,5 +1,3 @@
-from math import sqrt
-
 def primes_until(n: int):
     """Uses the Sieve of Eratosthenes to return the primes lower than `n`."""
     is_prime = [True] * n

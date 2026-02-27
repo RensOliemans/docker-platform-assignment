@@ -1,8 +1,6 @@
-import os
-
 from flask import Flask
 
-from primes import primes_until
+from api.primes import primes_until
 
 
 app = Flask(__name__)
