@@ -16,10 +16,11 @@ def health():
     return {"status": "ok"}, 200
 
 
-@app.route("/primes-until/<int:n>")
+@app.route("/primes-until/<n>")
 def primes(n: int):
-    if n < 2:
-        return {"error": "n should be larger than 1"}, 400
+    try:
+        primes: list[int] = primes_until(n)
+    except ValueError as e:
+        return {"error": str(e)}, 400
 
-    primes: list[int] = primes_until(n)
     return {"primes": primes}

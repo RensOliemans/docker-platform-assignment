@@ -1,3 +1,5 @@
+import pytest
+
 from api.primes import primes_until
 
 
@@ -31,3 +33,16 @@ def test_valid_primes_until_100():
     ]
 
     assert primes == primes_until(100)
+
+
+def test_valueerror_negative():
+    with pytest.raises(ValueError):
+        primes_until(-1)
+
+
+def test_valueerror_nonnumber():
+    with pytest.raises(ValueError):
+        primes_until('abc')
+
+    with pytest.raises(ValueError):
+        primes_until([])
