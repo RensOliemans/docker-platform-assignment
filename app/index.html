@@ -8,28 +8,28 @@
   </head>
   <body>
     <h1>Docker assignment</h1>
-    <p>Hello! this is the result of my Docker assignment. The output is a really
-      simple website, the one you're seeing right now. It only has some
-      explanation about itself, and a way to find prime numbers. I divided the
-      explanation into separate parts, click on the boxes to expand the
+    <p>Hello! I'm Rens and you are looking at the result of my Docker
+      assignment. The output is a really simple website, the one you're seeing
+      right now. It only has some explanation about itself and a way to find
+      prime numbers. Click on the boxes to see each part of the
       documentation. </p>
 
     <details id="architecture">
       <summary>Architectural overview</summary>
-      <p>There are three components to this application, the <code>proxy</code>,
-	web <code>app</code> and <code>api</code>. When you go to this website, you
-	communicate directly with the <code>proxy</code>. This <code>proxy</code>
+      <p>There are three components to this application, the <samp>proxy</samp>,
+	web <samp>app</samp> and <samp>api</samp>. When you go to this website, you
+	communicate directly with the <samp>proxy</samp>. This <samp>proxy</samp>
 	handles <em>all</em> outside communication. Internally, it communicates
-	with the <code>app</code>, and gives you the file you're reading right now.
+	with the <samp>app</samp>, and gives you the file you're reading right now.
 	When you go this website, this is what happens:</p>
 
       <img src="arch-basic.svg" alt="Basic architecture" />
 
       <p>Here, the black arrows are the web requests between you and the proxy,
 	and the blue requests are "internal". You might also notice an unused
-	third box, the <code>api</code>. This api has an endpoint
-	at <code>/api/primes-until/&lt;n&gt;</code>, which finds all primes that are
-	lower than <code>n</code>.</p>
+	third box, the <samp>api</samp>. This api has an endpoint
+	at <samp>/api/primes-until/&lt;n&gt;</samp>, which finds all primes that are
+	lower than <samp>n</samp>.</p>
 
       <p>To try it out, see <a href="#primes">the input box at the bottom of the
 	  page</a>. Try it out!</p>
@@ -41,16 +41,99 @@
       <img src="arch-api.svg" alt="Architecture for API call">.
     </details>
 
-    <details id="logging">
-      <summary>Logging</summary>
+    <details>
+      <summary>Features</summary>
 
-      <p>You can see lots of logs
-      at <a href="http://assignment.rensoliemans.nl:3000">assignment.rensoliemans.nl:3000</a>.
-      This is a Grafana instance which gets its logs from the Docker containers.
-      You're communicating to a port directly exposed from the Grafana
-      container, which means that this does <em>not</em> go via the proxy. This
-      is bad news. See <a href="#limitations">Limitations</a> for more
-      information.</p>
+      <dl>
+	<dt>Routed web traffic via reverse proxy</dt>
+	<dd>The web traffic of the <samp>api</samp> and <samp>web app</samp> are
+	  not exposed to the internet directly. They are all routed via
+	  the <samp>proxy</samp> instead. Unfortunately the logging component is
+	  directly visible, see <a href="#limitations">Limitations</a> for
+	  why.</dd>
+
+	<dt>Scalable components</dt>
+	<dd>By passing
+	  <code>
+	    docker compose up --build --scale app=4
+	  </code>
+	  Docker automatically creates 4 instances of the <samp>app</samp>
+	  container. The <samp>proxy</samp> is configured to schedule the
+	  requests across these instances using round-robin.
+	</dd>
+
+	<dt>Small, tested API</dt>
+	<dd>
+	  A small Flask API that has two endpoints:
+	  <code>
+	    /api/health
+	  </code>
+	  and
+	  <code>
+	    /api/primes-until/&lt;n&gt;
+	  </code>.
+
+	  See <a href="#primes">below</a> for a usage of the primes endpoint.
+	  The source
+	  directory <a href="https://github.com/RensOliemans/docker-platform-assignment/tree/main/api/tests">api/tests/</a>
+	  contains tests for this API, which are also run in the CI.
+	</dd>
+
+	<dt>Extensive CI/CD pipeline</dt>
+	<dd>
+	  Defined
+	  in <a href="https://github.com/RensOliemans/docker-platform-assignment/blob/main/.github/workflows/ci.yml">ci.yml</a>,
+	  the CI uses GitHub actions to do the following:
+	  <ul>
+	    <li>For each <samp>push</samp> to the <samp>main</samp> branch:
+
+	      <ul>
+		<li>Lint config files</li>
+		<li>Test the platform, including the building of the Docker
+		images, the creation and correct behaviour of resulting Docker
+		containers (via <samp>/api/health</samp>), and the testing of
+		  the API via <samp>pytest</samp>.</li>
+		<li>If successful, publish the Docker images to GHCR</li>
+		<li>Deploy the new images to the server</li>
+	      </ul>
+	    </li>
+	    <li>For pull requests or pushes to another branch:
+	      <ul>
+		<li>Lint config files</li>
+		<li>Test the platform</li>
+	      </ul>
+	    </li>
+	  </ul>
+
+	  See the history of actions run
+	  at <a href="https://github.com/RensOliemans/docker-platform-assignment/actions">github.com/RensOliemans/docker-platform-assignment/actions</a>
+	</dd>
+
+	<dt>Centralized logging</dt>
+	<dd>
+	  You can see lots of logs
+	  at <a href="http://assignment.rensoliemans.nl:3000">assignment.rensoliemans.nl:3000</a>.
+	  This is a Grafana instance which gets its logs from the Docker
+	  containers. Username: <samp>admin</samp>.
+	  Password: <samp>kpn-secret</samp>.
+
+	  You're communicating to a port directly exposed from the Grafana
+	  container, which means that this does <em>not</em> go via the proxy.
+	  This is bad news. See <a href="#limitations">Limitations</a> for more
+	  information.
+	</dd>
+
+	<dt>Hardened security configuration</dt>
+	<dd>
+	  See <a href="https://github.com/RensOliemans/docker-platform-assignment/blob/main/proxy/nginx.conf">proxy/nginx.conf</a>
+	  for the security headers. We use the headers as recommended by
+	  the <a href="https://owasp.org/www-project-secure-headers/">OWASP
+	    Secure Headers Project</a>.
+
+	  <p>All communication with the webserver and the api is done via proxy,
+	    those are not exposed to the internet directly.</p>
+	</dd>
+      </dl>
     </details>
 
     <details id="limitations">
@@ -70,18 +153,18 @@
       and ended up spending too much time on this, so decided to move on to
       other features. Here's what went wrong:</p>
 
-      <p>I initially added a <code>certbot</code> service in
-	my <code>docker-compose.yml</code>. This shared volumes
-	(mainly <code>/etc/letsencrypt/...</code>) with the <code>proxy</code> service,
-	where <code>certbot</code> wrote certificates and the <code>proxy</code> read
-	them. The problem was that <code>certbot</code> can only create this
+      <p>I initially added a <samp>certbot</samp> service in
+	my <samp>docker-compose.yml</samp>. This shared volumes
+	(mainly <samp>/etc/letsencrypt/...</samp>) with the <samp>proxy</samp> service,
+	where <samp>certbot</samp> wrote certificates and the <samp>proxy</samp> read
+	them. The problem was that <samp>certbot</samp> can only create this
 	certificate <em>on the machine that listens on the domain</em>, aka this
 	website - and <strong>not</strong> on my local development laptop or on
-	the GitHub runner. This broke the <code>nginx -t</code> test in my CI, and
+	the GitHub runner. This broke the <samp>nginx -t</samp> test in my CI, and
 	made it difficult to quickly develop locally.</p>
 
       <p>I did not find a way to easily solve this with an automated solution (I
-      don't want to manually run <code>certbot</code> commands on the production
+      don't want to manually run <samp>certbot</samp> commands on the production
       server), so I let that go. An alternative would be to use a self-signed
       certificate, which would have been better than HTTP. However, I had spent
       a lot of time on this already (and this is easy with more nginx
@@ -91,15 +174,15 @@
 
       <p>This also is unacceptable, and also arose from my lack of nginx
       knowledge. The problem was that I wanted to see the logging
-      on <code>/logs</code>, so I added a <code>location /logs/</code> block in nginx,
+      on <samp>/logs</samp>, so I added a <samp>location /logs/</samp> block in nginx,
       which proxied the requests to the Grafana container.</p>
 
-      <p>Grafana has to know that it is being served at <code>/logs/</code>, and I
-      set this up in docker-compose, with the <code>GF_SERVER_ROOT_URL</code>
+      <p>Grafana has to know that it is being served at <samp>/logs/</samp>, and I
+      set this up in docker-compose, with the <samp>GF_SERVER_ROOT_URL</samp>
       environment variable.</p>
 
       <p>However, Grafana kept redirecting to this root url, so when you
-      visited <code>/logs/</code>, Grafana would redirect to <code>/logs/</code>. This
+      visited <samp>/logs/</samp>, Grafana would redirect to <samp>/logs/</samp>. This
       is an infinite redirection! I spent quite some time troubleshooting this,
       but I decided to move on and leave this for now.</p>
     </details>
