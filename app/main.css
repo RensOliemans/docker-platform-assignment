@@ -1,0 +1,12 @@
+details {
+    margin: 1em;
+}
+
+#display-primes {
+    max-width: 70%;
+    padding-bottom: 500px;
+}
+
+#sequence {
+    font-family: monospace;
+}

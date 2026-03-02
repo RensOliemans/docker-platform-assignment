@@ -3,21 +3,132 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="main.css">
     <title>Hi there</title>
   </head>
   <body>
-    <h1>Hi there.</h1>
-    <p>I'm running on a web server</p>
+    <h1>Docker assignment</h1>
+    <p>Hello! this is the result of my Docker assignment. The output is a really
+      simple website, the one you're seeing right now. It only has some
+      explanation about itself, and a way to find prime numbers. I divided the
+      explanation into separate parts, click on the boxes to expand the
+      documentation. </p>
+
+    <details id="architecture">
+      <summary>Architectural overview</summary>
+      <p>There are three components to this application, the <code>proxy</code>,
+	web <code>app</code> and <code>api</code>. When you go to this website, you
+	communicate directly with the <code>proxy</code>. This <code>proxy</code>
+	handles <em>all</em> outside communication. Internally, it communicates
+	with the <code>app</code>, and gives you the file you're reading right now.
+	When you go this website, this is what happens:</p>
+
+      <img src="arch-basic.svg" alt="Basic architecture" />
+
+      <p>Here, the black arrows are the web requests between you and the proxy,
+	and the blue requests are "internal". You might also notice an unused
+	third box, the <code>api</code>. This api has an endpoint
+	at <code>/api/primes-until/&lt;n&gt;</code>, which finds all primes that are
+	lower than <code>n</code>.</p>
+
+      <p>To try it out, see <a href="#primes">the input box at the bottom of the
+	  page</a>. Try it out!</p>
+
+      <p>Whenever you press "Compute", this web page communicates with the api.
+	Of course, this also actually goes via the proxy: the api is not exposed
+	to the internet by itself. Here's this diagram:</p>
+
+      <img src="arch-api.svg" alt="Architecture for API call">.
+    </details>
+
+    <details id="logging">
+      <summary>Logging</summary>
+
+      <p>You can see lots of logs
+      at <a href="http://assignment.rensoliemans.nl:3000">assignment.rensoliemans.nl:3000</a>.
+      This is a Grafana instance which gets its logs from the Docker containers.
+      You're communicating to a port directly exposed from the Grafana
+      container, which means that this does <em>not</em> go via the proxy. This
+      is bad news. See <a href="#limitations">Limitations</a> for more
+      information.</p>
+    </details>
+
+    <details id="limitations">
+      <summary>Limitations</summary>
+
+      <p>There are 2 big limitations to this application: lack of HTTPS, and the
+	exposed logging container. I briefly explain the limitations below, but
+	you can read a bit more
+	in <a href="https://github.com/RensOliemans/docker-platform-assignment/blob/main/docs/limitations.md">docs/limitations.md</a>
+	on my GitHub repo.</p>
+
+      <h2>Lack of HTTPS</h2>
+
+      <p>Of course, any production-ready application has to use HTTPS. However,
+      I use <a href="https://caddyserver.com/">Caddy</a> at home, which fixes
+      all certification on its own. I had some trouble with nginx' configuration
+      and ended up spending too much time on this, so decided to move on to
+      other features. Here's what went wrong:</p>
+
+      <p>I initially added a <code>certbot</code> service in
+	my <code>docker-compose.yml</code>. This shared volumes
+	(mainly <code>/etc/letsencrypt/...</code>) with the <code>proxy</code> service,
+	where <code>certbot</code> wrote certificates and the <code>proxy</code> read
+	them. The problem was that <code>certbot</code> can only create this
+	certificate <em>on the machine that listens on the domain</em>, aka this
+	website - and <strong>not</strong> on my local development laptop or on
+	the GitHub runner. This broke the <code>nginx -t</code> test in my CI, and
+	made it difficult to quickly develop locally.</p>
+
+      <p>I did not find a way to easily solve this with an automated solution (I
+      don't want to manually run <code>certbot</code> commands on the production
+      server), so I let that go. An alternative would be to use a self-signed
+      certificate, which would have been better than HTTP. However, I had spent
+      a lot of time on this already (and this is easy with more nginx
+      knowledge), so I decided to move on.</p>
+
+      <h2>Exposed Logging Container</h2>
+
+      <p>This also is unacceptable, and also arose from my lack of nginx
+      knowledge. The problem was that I wanted to see the logging
+      on <code>/logs</code>, so I added a <code>location /logs/</code> block in nginx,
+      which proxied the requests to the Grafana container.</p>
+
+      <p>Grafana has to know that it is being served at <code>/logs/</code>, and I
+      set this up in docker-compose, with the <code>GF_SERVER_ROOT_URL</code>
+      environment variable.</p>
+
+      <p>However, Grafana kept redirecting to this root url, so when you
+      visited <code>/logs/</code>, Grafana would redirect to <code>/logs/</code>. This
+      is an infinite redirection! I spent quite some time troubleshooting this,
+      but I decided to move on and leave this for now.</p>
+    </details>
+
+    <details id="source-code">
+      <summary>Source Code</summary>
+
+      <p>Check
+      out <a href="https://github.com/RensOliemans/docker-platform-assignment/">github.com/RensOliemans/docker-platform-assignment</a>
+      for the total source code. The most interesting files
+	are <a href="https://github.com/RensOliemans/docker-platform-assignment/blob/main/docker-compose.yml">docker-compose.yml</a>,
+	<a href="https://github.com/RensOliemans/docker-platform-assignment/blob/main/proxy/nginx.conf">proxy/nginx.conf</a>,
+	<a href="https://github.com/RensOliemans/docker-platform-assignment/blob/main/logging/docker-compose.yml">logging/docker-compose.yml</a>
+	and
+	<a href="https://github.com/RensOliemans/docker-platform-assignment/blob/main/.github/workflows/ci.yml">.github/workflows/ci.yml</a>.
+    </details>
 
     <div id="primes">
       <form id="primes">
-	<label>n
+	<label>Show prime numbers lower than:
 	  <input id="n" required="" autofocus type="number"></label>
-	<input type="submit" value="Show">
+	<input type="submit" value="Compute">
       </form>
 
-      <p id="display-primes"></p>
+      <div id="display-primes">
+	<p id="primes-intro"></p>
+	<div id="sequence"></div>
+      </div>
     </div>
   </body>
-  <script src="main.js" type="application/javascript"></script>
+  <script src="main.js"></script>
 </html>
