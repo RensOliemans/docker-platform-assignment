@@ -49,6 +49,11 @@ jobs:
 
       - name: Build with compose
         run: |
+          mkdir -p proxy/certs
+          openssl req -x509 -nodes -days 1 -newkey rsa:2048 \
+            -keyout proxy/certs/nginx.key \
+            -out proxy/certs/nginx.crt \
+            -subj "/CN=ci"
           docker compose build
 
       - name: Start services
