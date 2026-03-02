@@ -1,5 +1,8 @@
 name: assignment
 
+include:
+  - logging/docker-compose.yml
+
 services:
   app:
     image: ghcr.io/rensoliemans/docker-platform-assignment/app:${IMAGE_TAG:-latest}
