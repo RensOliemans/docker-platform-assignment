@@ -15,6 +15,11 @@ h1, h2
     color: #00c300;
 }
 
+img {
+    display: block;
+    margin: auto;
+}
+
 #primes {
     margin: auto;
     padding-top: 2em;
