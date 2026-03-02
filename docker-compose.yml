@@ -23,6 +23,8 @@ services:
     ports:
       - "${PROXY_HTTP_PORT:-8001}:80"
       - "${PROXY_HTTPS_PORT:-8443}:443"
+    volumes:
+      - ./proxy/certs:/etc/nginx/certs:ro
     depends_on:
       - app
       - api
