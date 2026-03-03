@@ -47,11 +47,9 @@
 
       <dl>
 	<dt>Routed web traffic via reverse proxy</dt>
-	<dd>The web traffic of the <samp>api</samp> and <samp>web app</samp> are
-	  not exposed to the internet directly. They are all routed via
-	  the <samp>proxy</samp> instead. Unfortunately the logging component is
-	  directly visible, see <a href="#limitations">Limitations</a> for
-	  why.</dd>
+	<dd>The web traffic of the <samp>api</samp>, <samp>web app</samp>,
+	  and <samp>grafana</samp> are not exposed to the internet directly.
+	  They are all routed via the <samp>proxy</samp> instead.</dd>
 
 	<dt>Scalable components</dt>
 	<dd>By passing
@@ -113,15 +111,10 @@
 	<dt>Centralized logging</dt>
 	<dd>
 	  You can see lots of logs
-	  at <a href="http://assignment.rensoliemans.nl:3000">assignment.rensoliemans.nl:3000</a>.
+	  at <a href="http://logs.assignment.rensoliemans.nl">logs.assignment.rensoliemans.nl</a>.
 	  This is a Grafana instance which gets its logs from the Docker
 	  containers. Username: <samp>user</samp>.
 	  Password: <samp>kpn-secret</samp>.
-
-	  You're communicating to a port directly exposed from the Grafana
-	  container, which means that this does <em>not</em> go via the proxy.
-	  This is bad news. See <a href="#limitations">Limitations</a> for more
-	  information.
 	</dd>
 
 	<dt>Hardened security configuration</dt>
@@ -140,52 +133,31 @@
     <details id="limitations">
       <summary>Limitations</summary>
 
-      <p>There are 2 big limitations to this application: lack of HTTPS, and the
-	exposed logging container. I briefly explain the limitations below, but
-	you can read a bit more
-	in <a href="https://github.com/RensOliemans/docker-platform-assignment/blob/main/docs/limitations.md">docs/limitations.md</a>
-	on my GitHub repo.</p>
+      <p>There is 1 limitations to this application: our self-signed HTTPS
+	certificate.
 
       <h2>Lack of HTTPS</h2>
 
       <p>Of course, any production-ready application has to use HTTPS. However,
       I use <a href="https://caddyserver.com/">Caddy</a> at home, which fixes
       all certification on its own. I had some trouble with nginx' configuration
-      and ended up spending too much time on this, so decided to move on to
-      other features. Here's what went wrong:</p>
+      and ended up spending too much time on this trying to fix this "properly",
+      so decided to use a self-signed certificate and move on.</p>
 
       <p>I initially added a <samp>certbot</samp> service in
 	my <samp>docker-compose.yml</samp>. This shared volumes
-	(mainly <samp>/etc/letsencrypt/...</samp>) with the <samp>proxy</samp> service,
-	where <samp>certbot</samp> wrote certificates and the <samp>proxy</samp> read
-	them. The problem was that <samp>certbot</samp> can only create this
-	certificate <em>on the machine that listens on the domain</em>, aka this
-	website - and <strong>not</strong> on my local development laptop or on
-	the GitHub runner. This broke the <samp>nginx -t</samp> test in my CI, and
-	made it difficult to quickly develop locally.</p>
+	(mainly <samp>/etc/letsencrypt/...</samp>) with the <samp>proxy</samp>
+	service, where <samp>certbot</samp> wrote certificates and
+	the <samp>proxy</samp> read them. The problem was
+	that <samp>certbot</samp> can only create this certificate <em>on the
+	machine that listens on the domain</em>, aka this website -
+	and <strong>not</strong> on my local development laptop or on the GitHub
+	runner. This broke the <samp>nginx -t</samp> test in my CI, and made it
+	difficult to quickly develop locally.</p>
 
       <p>I did not find a way to easily solve this with an automated solution (I
       don't want to manually run <samp>certbot</samp> commands on the production
-      server), so I let that go. An alternative would be to use a self-signed
-      certificate, which would have been better than HTTP. However, I had spent
-      a lot of time on this already (and this is easy with more nginx
-      knowledge), so I decided to move on.</p>
-
-      <h2>Exposed Logging Container</h2>
-
-      <p>This also is unacceptable, and also arose from my lack of nginx
-      knowledge. The problem was that I wanted to see the logging
-      on <samp>/logs</samp>, so I added a <samp>location /logs/</samp> block in nginx,
-      which proxied the requests to the Grafana container.</p>
-
-      <p>Grafana has to know that it is being served at <samp>/logs/</samp>, and I
-      set this up in docker-compose, with the <samp>GF_SERVER_ROOT_URL</samp>
-      environment variable.</p>
-
-      <p>However, Grafana kept redirecting to this root url, so when you
-      visited <samp>/logs/</samp>, Grafana would redirect to <samp>/logs/</samp>. This
-      is an infinite redirection! I spent quite some time troubleshooting this,
-      but I decided to move on and leave this for now.</p>
+      server), so I let that go.</p>
     </details>
 
     <details id="source-code">

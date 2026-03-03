@@ -49,12 +49,16 @@ https://github.com/RensOliemans/docker-platform-assignment/actions
 
 # Expert level
 ## HTTPS
-See [file:./limitations.md](limitations.md).
+We use a self-signed certificate that is valid for both
+`assignment.rensoliemans.nl` and `logs.assignment.rensoliemans.nl`. We wanted to
+use certbot, but had trouble with `nginx -t` in the CI, and developing locally,
+since certbot obtains a certificate by going to
+`<DOMAIN>:80/.well-known/acme-challenge`, and when developing locally, we are of
+course not reachable on `<DOMAIN>:80`.
 
 ## Logging
-http://assignment.rensoliemans.nl:3000. Obviously this is not
-production-ready: we would want this to go via the proxy, and port
-3000 to not be exposed. See [file:./limitations.md](limitations.md).
+http://logs.assignment.rensoliemans.nl - a Grafana instance which obtains logs
+from the running Docker containers.
 
 ## Testing
 ```sh
