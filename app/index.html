@@ -39,7 +39,18 @@
 	Of course, this also actually goes via the proxy: the api is not exposed
 	to the internet by itself. Here's this diagram:</p>
 
-      <img src="arch-api.svg" alt="Architecture for API call">.
+      <img src="arch-api.svg" alt="Architecture for API call">
+
+      <p>Now there is one additional part in this application: logging. I have a
+      Grafana instance
+      at <a href="https://logging.assignment.rensoliemans.nl">logging.assignment.rensoliemans.nl</a>
+      which compiles logs from all running containers. This works
+      via <a href="https://grafana.com/docs/alloy/latest/monitor/monitor-docker-containers/">Grafana
+      Alloy</a>, which can compile metrics and logs from running Docker
+      containers. This all is also routed behind a proxy, as shown in this
+      diagram:</p>
+
+      <img src="arch-logging.svg" alt="Logging architecture">
     </details>
 
     <details>
@@ -108,7 +119,7 @@
 	  at <a href="https://github.com/RensOliemans/docker-platform-assignment/actions">github.com/RensOliemans/docker-platform-assignment/actions</a>
 	</dd>
 
-	<dt>Centralized logging</dt>
+	<dt>Centralised logging</dt>
 	<dd>
 	  You can see lots of logs
 	  at <a href="http://logs.assignment.rensoliemans.nl">logs.assignment.rensoliemans.nl</a>.
